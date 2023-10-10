@@ -33,7 +33,6 @@ TOTAL = SUM * ((1 + p) ** (SET_PERIOD / FIXED_PERIOD))
 #       as well
 # TODO: (extra) Output only percents if the initial SUM is
 #       not known at the moment the script is run
-
 USAGE = """USAGE: {script} initial_sum percent fixed_period set_period 
  
 \tCalculate deposit yield. See script source for more details. 
@@ -54,7 +53,19 @@ def main():
     set_period = float(input("set_period: ")) 
  
     res = deposit(initial_sum, percent, fixed_period, set_period) 
-    print(res) 
+    print(f"Total after {set_period} years: {res:.2f}")  # Print the total for the specified set period
+
+    # Calculate yields for some common periods
+    yield_1_month = deposit(initial_sum, percent, 1 / 12, 1)
+    yield_1_year = deposit(initial_sum, percent, 1, 1)
+    yield_5_years = deposit(initial_sum, percent, 1, 5)
+    yield_10_years = deposit(initial_sum, percent, 1, 10)
+
+    # Print the yields for common periods
+    print(f"Yield for 1 month: {yield_1_month:.2f}")
+    print(f"Yield for 1 year: {yield_1_year:.2f}")
+    print(f"Yield for 5 years: {yield_5_years:.2f}")
+    print(f"Yield for 10 years: {yield_10_years:.2f}")
  
 if __name__ == '__main__': 
     main()
