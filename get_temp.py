@@ -1,81 +1,87 @@
-#!/usr/bin/env python
-
 import decimal
 
-# Where temperature is stored
-# currently it is a motherboard temperature
 SENSOR_TPL = '/sys/class/thermal/thermal_zone{num}/temp'
 
-def get_temp(sensor_num=0, *, _template=SENSOR_TPL):
-    """Read temperature and return as decimal.
-
-    Note:
-        This call is blocking, but is ought to return fast
-    """
-    # convert to int
-    sensor_num = int(sensor_num)
-    
-    fname = _template.format(num=sensor_num)
-    with open(fname, 'r') as file:
-        val = file.readline().strip()
-
-    # convert value to int, then to decimal
-    val = int(val)
-    # the value we got is temperature * 1000,
-    # thus divide by 1000 to get actual value
-    dec = decimal.Decimal(f'{val}.000') / 1000
-    return dec
-
-
-
-class Sensor:
-    _TEMPLATE = '/sys/class/thermal/thermal_zone{num}/temp'
+class SensorValue:
     _PREC = 3
     
-    def __init__(self, sensor_num=0, *, _tpl=None):
-        sensor_num = int(sensor_num)    # enforce convertability
-
-        # get template through arg or use class-level default
-        tpl = self._TEMPLATE if _tpl is None else _tpl
-        # or (same as)
-        # tpl = _tpl or self._TEMPLATE
-
-        self.sensor = tpl.format(num=sensor_num)
+    def __init__(self, value=None):
+        self.value = value
 
     @classmethod
-    def convert_temperature(cls, value):
-        # convert value to int, then to decimal
+    def convert_value(cls, value):
         value = int(value)
-        # the value we got is temperature * (10 ** PREC),
-        # thus divide by (10 ** PREC) to get actual value
-        PREC = cls._PREC
-        val = f'{value}.' + '0' * PREC
-        dec = decimal.Decimal(val) / (10 ** PREC)
+        val = f'{value}.' + '0' * cls._PREC
+        dec = decimal.Decimal(val) / (10 ** cls._PREC)
         return dec
+
+    def get_raw_value(self):
+        raise NotImplementedError("Subclasses must implement get_raw_value method.")
+
+    def get_value(self):
+        val = self.get_raw_value()
+        return self.convert_value(val)
+
+    @property
+    def value(self):
+        if not hasattr(self, '_value'):
+            self._value = self.get_value()
+        return self._value
+
+    @value.setter
+    def value(self, new_value):
+        self._value = new_value
+
+class dBLoudness(SensorValue):
+    _TEMPLATE = '/path/to/microphone/noise_level_file'  # Replace with the actual path
     
-    def get_temperature_raw(self):
-        with open(self.sensor, 'r') as file:
+    def get_raw_value(self):
+        with open(self._TEMPLATE, 'r') as file:
             val = file.readline().strip()
 
         return val
 
-    def get_temperature(self):
-        # print('calc performed')       # uncomment to check it's cached
-        val = self.get_temperature_raw()
-        return self.convert_temperature(val)
-
-    @property
-    def temp(self):
-        if not hasattr(self, '_temp'):
-            self._temp = self.get_temperature()
-        return self._temp          
+class CameraColor(SensorValue):
+    _TEMPLATE = '/path/to/camera/color_file'  # Replace with the actual path
     
+    def get_raw_value(self):
+        with open(self._TEMPLATE, 'r') as file:
+            val = file.readline().strip()
+
+        return val
+
+def get_temp(sensor_num=0, *, _template=SENSOR_TPL):
+    sensor_num = int(sensor_num)
+    fname = _template.format(num=sensor_num)
+    with open(fname, 'r') as file:
+        val = file.readline().strip()
+
+    val = int(val)
+    dec = decimal.Decimal(f'{val}.000') / 1000
+    return dec
+
+class Sensor(SensorValue):
+    _TEMPLATE = '/sys/class/thermal/thermal_zone{num}/temp'
+    
+    def __init__(self, sensor_num=0):
+        super().__init__(sensor_num)
+
+    def get_raw_value(self):
+        with open(self._TEMPLATE.format(num=self.value), 'r') as file:
+            val = file.readline().strip()
+
+        return val
 
 if __name__ == '__main__':
-    tmp = Sensor()
-    val = tmp.get_temperature_raw()
-    res = tmp.convert_temperature(val)
-    # or
-    res = tmp.temp
-    # or
-    res = Sensor(0).temp
+    # Example usage of the new classes
+    temperature_sensor = Sensor(0)
+    temperature_value = temperature_sensor.value
+    print(f"Temperature: {temperature_value} °C")
+
+    noise_sensor = dBLoudness()
+    noise_value = noise_sensor.value
+    print(f"Noise Level: {noise_value} dB")
+
+    color_sensor = CameraColor()
+    color_value = color_sensor.value
+    print(f"Camera Color: {color_value}")
