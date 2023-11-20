@@ -1,5 +1,7 @@
 import itertools
 from enum import Enum
+import os
+import sys
 
 _ranks = [6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A']
 _suits = {
@@ -34,7 +36,13 @@ class FrenchDeck(CardDeckBase):
 if __name__ == '__main__':
     french_deck = FrenchDeck()
 
-    print("French Deck created with the following cards:")
-    for card in french_deck.cards:
-        print(f'{card.rank} of {card.suit}'.encode('utf-8').decode('utf-8'))
+    if sys.stdout.isatty():  # Check if standard output is a terminal
+        os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal
 
+    print("French Deck created with the following cards:")
+    
+    for card in french_deck.cards:
+        if sys.stdout.isatty():
+            print(f'{card.rank} of {card.suit}')
+        else:
+            print(f'{card.rank} of {card.suit}'.encode('utf-8').decode('utf-8'))
