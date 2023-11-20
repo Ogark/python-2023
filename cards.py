@@ -33,7 +33,8 @@ class FrenchDeck(CardDeckBase):
 
 if __name__ == '__main__':
     french_deck = FrenchDeck()
-    
+
     print("French Deck created with the following cards:")
     for card in french_deck.cards:
-        print(f'{card.rank} of {card.suit}')
+        print(f'{card.rank} of {card.suit}'.encode('utf-8').decode('utf-8'))
+
